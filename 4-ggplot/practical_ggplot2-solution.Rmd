@@ -1,0 +1,308 @@
+---
+title: "My answers"
+author: "Hamed Vaheb"
+date: "2021-11-19"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(gapminder)
+library(ggplot2)
+library(broom)
+library(palmerpenguins)
+```
+
+> This practical aims at performing exploratory plots and how-to build layer by layer to be familiar with
+the grammar of graphics.  
+
+##### Those kind of questions are optional {.bonus}
+
+
+# Scatter plots of penguins
+
+The `penguins` dataset is provided by the `palmerpenguins` R package. As for every function, most data-sets shipped with a package contain also a useful help page (`?`).
+
+##### If not done already, install the package `palmerpenguins` and load it.
+
+```{r}
+# I've already loaded the package
+glimpse(penguins)
+```
+
+
+##### Plot the body mass on the _y_ axis and the bill length on the _x_ axis.
+
+```{r}
+# Write your answer here
+ggplot(data = penguins) +
+geom_point(mapping = aes(x = bill_length_mm,
+                         y = body_mass_g))
+
+```
+
+
+##### Plot again the body mass on the _y_ axis and the bill length on the _x_ axis, but with colour by `species`
+
+```{r}
+# Write your answer here
+ggplot(data = penguins) +
+geom_point(mapping = aes(x = bill_length_mm,
+                         y = body_mass_g,
+                         colour = species))
+```
+
+
+
+
+##### The `geom_smooth()` layer can be used to add a trend line. Try to overlay it to your scatter plot.
+
+```{block, opts.label = "tip"}
+by default `geom_smooth` is using a loess regression (< 1,000 points) and adds standard error intervals. 
+
+- The `method` argument can be used to change the regression to a linear one: `method = "lm"`
+- to disable the ribbon of standard errors, set `se = FALSE`
+
+Be careful where the aesthetics are located, so the trend linear lines are **also** colored per species.
+```
+
+```{r}
+# Write your answer here
+ggplot(penguins,
+aes(x = bill_length_mm,
+    y = body_mass_g,
+    colour = species)) +
+geom_point() +
+geom_smooth(method = "lm", se = FALSE, 
+            formula = 'y ~ x')
+```
+
+
+
+##### Adjust the aesthetics of point in order to
+
+- the `shape` map to the originated `island`
+- a fixed size of `3`
+- a transparency of 40%
+
+```{block,  opts.label = "tip"}
+You should still have only 3 coloured linear trend lines. Otherwise check to which layer your are adding the aesthetic `shape`.
+Remember that fixed parameters are to be defined outside `aes()`
+```
+
+```{r}
+# Write your answer here
+ggplot(penguins,
+aes(x = bill_length_mm,
+y = body_mass_g,
+shape = island,
+colour = species)) +
+geom_point(size = 3, alpha = 0.4) +
+geom_smooth(method = "lm",
+            formula = 'y ~ x')
+```
+
+
+##### Ajust the colour aesthetic to the `ggplot()` call to propagate it to both point and regression line.
+Try the scale colour viridis for discrete scale (`scale_colour_viridis_d()`). Try to change the default theme to `theme_bw()`
+
+```{r}
+# Write your answer here
+
+ggplot(penguins,
+aes(x = bill_length_mm,
+    y = body_mass_g,
+    shape = island,
+    colour = species)) +
+geom_point(size = 3, alpha = 0.4) +
+geom_smooth(method = "lm",
+            formula = 'y ~ x') +
+scale_color_viridis_d() +
+theme_bw()
+
+
+```
+
+
+##### Find a way to produce the following plot:
+
+
+```{r}
+# Write your answer here
+```
+
+
+```{block,  opts.label = "tip"}
+Remember that:
+
+- all aesthetics defined in the `ggplot(aes())` command will be inherited by all following layers
+- `aes()` of individual geoms are specific (and overwrite the global definition if present).
+- `labs()` controls of plot annotations
+- `theme()` allows to tweak the plot like `theme(plot.caption = element_text(face = "italic"))` to render in italic the caption
+```
+
+> This task is missing.
+
+# Categorical data
+
+We are going to use a dataset from the [TidyTuesday](https://github.com/rfordatascience/tidytuesday/) initiative. Several dataset about the theme **deforestation** on April 2021 were released, we will focus on the csv called `brazil_loss.csv`. The dataset columns are described in the linked [README](https://github.com/rfordatascience/tidytuesday/blob/master/data/2021/2021-04-06/readme.md) and the csv is directly available at this [url](https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-04-06/brazil_loss.csv)
+
+
+##### Load the `brazil_loss.csv` file, remove the 2 first columns (`entity` and `code` since it is all Brazil) and assign the name `brazil_loss`
+
+```{block, opts.label = "tip"}
+Set the data type of `year` to `character()`
+```
+
+```{r}
+# Write your answer here
+brazil_url <- "https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-04-06/brazil_loss.csv"
+
+brazil <- readr::read_delim(brazil_url, show_col_types = FALSE) %>% 
+  select(-entity, -code)
+
+glimpse(brazil)
+
+```
+
+
+
+
+##### Is this dataset tidy?
+
+```{r}
+
+# Write your answer here
+
+#the dataset has the variables in 
+#brazil[0,]
+#as.character(unlist(brazil[1,]))
+
+#
+
+
+
+```
+> This is not an acceptable answer.
+
+##### Pivot the deforestation reasons (columns `commercial_crops` to `small_scale_clearing`) to the long format. Values are areas in hectares (`area_ha` is a good column name). Save as `brazil_loss_long`
+
+```{r}
+# Write your answer here
+brazil %>%
+  pivot_longer(-c("year"), names_to = "deforestation_reasons",
+               values_to = "area_ha") -> brazil_loss_long
+
+ brazil_loss_long
+
+#pivot_longer(brazil,
+#-contains("commercial"), # columns argument, require
+#names_to = "pos",
+#values_to = "variant")
+```
+
+
+
+##### Plot the deforestation areas per year as bars
+
+```{block, opts.label = "tip"}
+- `year` needs to be a categorical data. If you didn't read the data as character for this column, you can convert it with `factor()`
+- `geom_col()` requires 2 aesthetics
+    + `x` must be **categorical / discrete** (see first item)
+    + `y` **must be continuous**
+```
+
+```{r}
+# Write your answer here
+
+
+#ggplot(brazil_loss_long, aes(y = area_ha)) +
+#geom_bar(aes(x = factor(year)))
+
+
+ brazil_loss_long %>%
+  ggplot(aes(x = factor(year), y = area_ha)) +
+  geom_col()
+
+```
+
+
+##### Same as the plot above but bar filled by the reasons for deforestation
+
+```{r}
+# Write your answer here
+
+brazil_loss_long %>%
+  ggplot(aes(x = factor(year), y = area_ha, 
+             fill = deforestation_reasons)) +
+  geom_col()
+```
+
+
+Even if we have too many categories, we can appreciate the amount of `natural_disturbances` versus the reasons induced by humans.
+
+##### Lump the reasons for deforestations, keeping only the top 5 reasons, lumping as "Other" the rest
+
+```{block, opts.label = "tip"}
+- The function `fct_lump()` is very useful for this operation. Be careful to weight the categories with the appropriate continuous variable.
+- The legend of filled colours could be renamed and suppress if the title is explicit
+```
+
+```{r}
+# Write your answer here
+
+
+
+
+brazil_loss_long %>%
+ggplot(aes(x = year, y = area_ha,
+           fill = fct_lump_n(factor(deforestation_reasons), 5, w = area_ha))) +
+             #fct_infreq())) +
+geom_col() +
+scale_fill_brewer(palette = "Set1") +
+labs(fill = "top 5 Reasons of Deforestaitikon\n(ranked)")
+
+
+
+```
+
+
+
+##### Optimize the previous plot by sorting the 5 main deforestation reasons
+```{block, opts.label = "tip"}
+Unfortunately, `fct_infreq()` does not have a weight argument yet. 
+You need then to take care of this manually.
+
+One solution would be extract the top 5 main reasons using `dplyr` statements.
+
+Then use this vector to recode the `reasons` with the reason name when part of the top5 or `other` if not. Then `fct_reorder(reasons2, area_ha)` does the correct reordering. You might want to use
+`fct_rev()` to have the sorting from top to bottom in the legend.
+```
+
+```{r}
+# Write your answer here
+
+#brazil_loss_long 
+
+
+brazil_loss_long %>%
+  group_by(deforestation_reasons) %>%
+  summarise(sum_area_ha = sum(area_ha, na.rm = TRUE)) %>%
+  #arrange(desc(sum_area_ha)) %>%
+  slice_max(order_by =sum_area_ha, n=5) %>%
+  pull(deforestation_reasons) -> top5_reasons
+
+
+
+brazil_loss_long %>%
+  mutate(reasons = if_else(deforestation_reasons %in% top5_reasons,          deforestation_reasons, "other")) %>%
+  ggplot(aes(x = year, y = area_ha, fill = fct_reorder(reasons, area_ha) %>% fct_rev())) +
+  geom_col()+
+  labs(title = "Top 5 deforestation reasons ordered descending", fill = "deforestation_reason")
+
+
+
+
+```
+

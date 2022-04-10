@@ -1,0 +1,431 @@
+---
+title: "My answers"
+author: "Hamed Vaheb"
+date: "2021-12-02"
+output: html_document
+---
+
+  
+```{r setup, include = FALSE}
+library(tidyverse)
+#library(gapminder)
+library(ggplot2)
+library(broom)
+library(ggfortify)
+library(GGally)
+#library(palmerpenguins)
+#library(cowplot)
+```
+
+
+
+# 1. Simple linear model
+
+> In order to tryout linear models in _R_ we are going to use the `blood_fat` dataset which contains the *age* (in years), *weight* (in kg) and  measured *fat concentrations* (units were not mentioned) in blood samples of different subjects.
+
+## Relation of blood fat content and age
+
+We would like to determine whether the blood concentration in fat is related to the age of the subjects.
+
+(@) load the data (`csv`) available [here](data/blood_fat.csv) in R
+
+```{r}
+# Write your answer here
+
+blood_fat <- readr::read_delim("data/blood_fat.csv")
+blood_fat
+```
+
+
+
+### Visualization
+
+(@) If the goal would be to guess the fat concentration knowing someones age, find out which are the **response** and **predictor** variables and draw the according scatter plot.
+(@) Add a regression line (without the confidence interval ribbon).
+
+[HMD:] The assumption is that the target variable is continuous. In here both age and fat are continuous. However, if the discrete variable has many levels, then it may be best to treat it as a continuous variable. Consequently, we will take fat as the predictor and the age as a response.
+```{r}
+# Write your answer here
+blood_fat 
+
+blood_fat %>%
+lm(fat ~ age, data = .) %>%
+summary()
+```
+
+```{r}
+ggplot(blood_fat, aes(x = age, y = fat)) +
+geom_point() +
+geom_smooth(method = "lm", se = FALSE)
+
+
+```
+
+
+(@) Add a new column to the `blood_fat` data frame containing the expected fat levels from the linear model.
+    - For each subject in the data frame, add these predicted values as **red points** on your previous plot.
+    - Using `geom_segment()`, connect the expected values to the measured values as **dotted lines**.
+
+```{block, opts.label = "tip"}
+remember to use the appropriate `broom` function after the linear model, to fetch all those information in one tibble
+```
+
+
+```{r}
+# Write your answer here
+
+#new = lm(fat ~ age, data = .))
+fit <- lm(fat ~ age, data = blood_fat)
+blood_fat %>% mutate(expected = predict(fit))
+
+
+
+augment(fit) %>%
+ggplot(aes(x = age, y = fat)) +
+geom_point() +
+geom_smooth(method = "lm", se = FALSE) +
+geom_point(aes(y = .fitted), colour = "red") +
+geom_segment(aes(xend = age,
+yend = .fitted),
+linetype = "dotted")
+
+```
+
+
+(@) Calculate the **slope** and **intercept** of the regression line
+
+```{r}
+# Write your answer here
+#intercept
+coef(fit)[1] 
+#slope
+coef(fit)[2]
+```
+
+
+(@) draw a **dashed lightblue** line using **explicitly** the values you calculated in the previous question
+
+```{r}
+# Write your answer here
+ggplot(blood_fat, aes(x = age, y = fat)) +
+geom_point() +
+geom_abline(slope = coef(fit)[2], intercept = coef(fit)[1]) +
+geom_smooth(method = "lm", se = FALSE, linetype = "dashed")
+```
+
+
+
+### Calculate $R^2$
+
+You learned that $R^2$ can be calculated as follows:
+
+  $$R^2 = 1- \frac{\sum(y_i - \hat{y_i})^2}{\sum(y_i - \bar{y})^2} = 1- \frac{RSS}{TSS}$$
+
+(@) The length of the dotted lines you just represented are related to a term of this equation. Which one?
+
+[HMD:] The dotted lines represent residuals, i.e., the distance between the real value and the predicted values of the regression. Therefore, they are related to RSS. But RSS is sum of the squares. So if we sum up the square of the residuals, we obtain RSS
+
+(@) Using `mutate()`, add the length of each dotted line to the `blood_fat` data frame.
+
+```{r}
+# Write your answer here
+my_residuals <- abs(blood_fat$fat - predict(fit))
+head(my_residuals)
+
+blood_fat %>% mutate(res = my_residuals)
+```
+
+
+(@) What do these length represent? Which functions in _R_ generates these values?
+
+[HMD:] They represent the distance between y and y_hat.
+```{r}
+# Write your answer here
+residuals(fit)
+```
+
+
+
+(@) Draw a **darkgreen** horizontal line showing the mean fat concentration of all measures.
+(@) Use `geom_segment()` to connect all points representing the real measures to their projection on this horizontal line (using a **darkgreen** color with **alpha = 0.2** and a **size of 2**).
+
+```{r}
+# Write your answer here
+ggplot(blood_fat, aes(x = age, y = fat)) +
+  geom_point() +
+ geom_hline(aes(yintercept = mean(blood_fat$fat) ), color="darkgreen")
+
+
+
+blood_fat
+```
+
+
+(@) Using `mutate()`, add the length of each green translucid line to the `blood_fat` data frame. What do they represent? And the sum of their squared length?
+
+```{block, opts.label = "tip"}
+Those lines are deviation to the global mean of the response
+```
+
+```{r}
+# Write your answer here
+ggplot(blood_fat, aes(x = age, y = fat)) +
+  geom_point() +
+  geom_hline(aes(yintercept = mean(blood_fat$fat) ),
+            color="darkgreen") +
+  geom_segment(aes(xend = age,
+                   yend = mean(blood_fat$fat)),
+               color="darkgreen", size=2, alpha=0.2)
+```
+  
+
+(@) Calculate $RSS$, $TSS$ and $R^2$
+
+```{r}
+# Write your answer here
+RSS = sum(residuals(fit)^2)
+TSS = sum((blood_fat$fat - mean(blood_fat$fat))^2)
+
+R2 = 1 - (RSS/TSS)
+cat("RSS is", RSS, "\n")
+cat("TSS is", TSS, "\n")
+cat(c("R2 is", R2, "\n"))
+
+
+```
+
+
+```{r}
+# Write your answer here
+
+```
+
+
+(@) Is there really a relationship between blood fat content and age?
+(@) What does the value of $R^2$ tell you?
+
+[HMD:] The $R^2$ is almost close to 1. This implies that the fitted line is close to the actual value. More intuitively the $R^2$ value is the proportion of that variation that is accounted for by using the linear regression. Considering that TSS is fixed and indicates the variance of $Y$, which is distance of points from the horizontal line, $RSS$ which indicates a lesser distance which is from the points from the regression line, and we call it explained variation. So, $R^2$ explains the extra variation explained and the original variation.
+
+Since it is near 1, the linear model can express fat by age.
+However, in order to have assurance about the precision of the model, my speculation is that we should test this model on some test data as well. 
+```{r}
+# Write your answer here`
+```
+
+
+
+### Checking the residuals of the model
+
+(@) Residuals's mean
+    + What is the expectation for the residuals's mean?
+    + Compute the residuals's mean for the fat explained by age model.
+    
+Since we assume that the resiuals follow the normal with mean of zero and variance of one, I anticipate that the value sholud be near zero.
+```{r}
+# Write your answer here
+mean(residuals(fit))
+```
+
+
+(@) Can the measures appropriately be modelled in this way? Draw two diagnosis plots using `ggplot2`
+    + In the first draw the residuals on the _y_ axis and the estimated values on the _x_ axis 
+    + Your second one should be a quantile-quantile plot.
+
+
+```{block, opts.label = "tip"}
+The package `ggfortify` and the function `autoplot(fit)` can produce the classic 4 diagnostic plots with no efforts
+```
+
+```{r}
+# Write your answer here
+par(mfrow = (c(2, 2)))
+plot(lm(fat ~ age, data = blood_fat))
+
+
+autoplot(fit)
+```
+
+
+### Relation of blood fat content and weight
+
+(@) Change predictor and use `weight` instead of `age` to predict the fat concentration
+
+```{r}
+# Write your answer here
+fit_w <- lm(fat ~ weight, data = blood_fat)
+blood_fat %>% mutate(expected_w = predict(fit_w))
+```
+
+
+(@) Check the summary and diagnostic plots for this regression
+
+```{r}
+# Write your answer here
+summary(fit_w)
+
+autoplot(fit_w)
+```
+
+
+```{r}
+# Write your answer here
+```
+
+
+(@) Can the blood content in fat be explained by the weight of the subject?
+
+```{r}
+# Write your answer here
+```
+[HMD:] No they can't for the following reasons:
+1. From the summary table, we see that the $R^2$ score is near 0.07 which is close to 0.
+Moreover, the standard error is near 85 which is high.
+ 
+It is also apparent in "Residuals vs Fitted" plot that the line is not near horizontal (thus distant from zero) so we have high residuals.
+
+
+# 2. Multiple linear regression 
+## Simulated data
+
+We are going to manipulate data where the relationship between the variables is simulated. This example comes from Gareth _et al._ 2013.
+
+### Generate the data
+
+(@) Use the following code to generate the data:
+
+```{r generate}
+set.seed(1)
+simul1 <- tibble(x1 = runif(100),
+                     x2 = 0.5 * x1 + rnorm(100) / 10,
+                     y  = 2 + 2 * x1 + 0.3 * x2 +(rnorm(100)))
+
+glimpse(simul1)
+```
+
+### Variable _y_ is using a linear model
+
+(@) Write the equation (as text in your markdown document)
+(@) Write the regression coefficients (as text in your markdown document)
+
+[HMD:]    
+$y  = 2 + 2 * x_1 + 0.3 * x_2 +(rnorm(100)))$   
+Coefficients:  2, 0.3
+```{r}
+# Write your answer here
+```
+
+
+(@) Plot the relationship between _x1_ and _x2_. You might want to display all relationships using `ggpairs`
+
+```{block, opts.label = "tip"}
+`ggpairs` comes from the package `GGally`
+```
+
+
+```{r}
+# Write your answer here
+ggpairs(simul1, columns = 1:2)
+
+```
+
+
+(@) What is the Pearson's correlation coefficient between _x1_ and _x2_?
+
+```{r}
+# Write your answer here
+cor(simul1$x1, simul1$x2)
+```
+
+
+(@) Will the correlation between predictors be a problem for the linear regression you just wrote down?
+(@) Name this effect.
+
+[HMD:] When two predictors are correlated, you will have a range of options that give the same regression and that is a problem. For instance, we will same adjusted square for models with different number of predictors, but we prefer the simpler one. The correlated variable is not significant.
+I think the effect is called fake effect due to a masked variable
+```{r}
+# Write your answer here
+
+
+```
+
+
+(@) Fit a linear model explaining _y_ by _x1 + x2_ and describe the summary results.\
+
+```{r}
+# Write your answer here
+lm(y ~ x1 + x2,data = simul1) %>% summary()
+```
+The model doesn't seem to be a good approximation of values of y since the $R^2$ value is near zero.
+
+
+(@) Do you accept $H_0: \hat{\beta_1} = 0$ and  $H_0: \hat{\beta_2} = 0$?
+
+I reject the hypotheses because the p-value is not greater than alpha. Also, the value of estimator of $x_1$ is smaller relatively.
+```{r}
+# Write your answer here
+
+```
+
+(@) Fit a linear model explaining _y_ by _x1_ alone.
+(@) Do you accept $H_0: \hat{\beta_1} = 0$?
+What happened?
+
+```{r}
+# Write your answer here
+lm(y ~ x1 ,data = simul1) %>% summary()
+```
+
+
+(@) Fit a linear model explaining _y_ by _x2_ alone.\
+(@) Do you accept $H_0: \hat{\beta_1} = 0$?\
+What happened?
+
+I reject the hypothesis again because the p-value is not greater than alpha.
+But the estimator of $x_1$ have greater value, implying that when we remove the masked effect of $x_2$, we can see that $x_1$ has greater effect now.
+```{r}
+# Write your answer here
+```
+
+
+### One observation was unfortunately forgotten and is:
+
+`x1 = 0.1, x2 = 0.8, y = 6`
+(@) Add it to the existing `simul1` and store the result as `simul2`.
+
+```{block, opts.label = "tip"}
+Have a look at the function `add_row()` defined in the package `tibble`
+```
+
+```{r}
+simul2 <- add_row(simul1, x1 = 0.1, x2 = 0.8, y = 6) 
+```
+
+```{r}
+# Write your answer here
+cor(simul2$x1, simul2$x2)
+```
+
+
+(@) Plot the relationship between _x1_ and _x2_ again using the updated dataset `simul2`.
+
+```{r}
+# Write your answer here
+ggpairs(simul2, columns = 1:2)
+```
+
+
+(@) Fit the previous linear model again using `simul2`
+
+
+```{r}
+lm(y ~ x1, data = simul2) %>% glance()
+```
+
+```{r}
+lm(y ~ x2, data = simul2) %>% glance()
+```
+
+```{r}
+lm(y ~ x1 + x2, data = simul2) %>% glance()
+```
+
